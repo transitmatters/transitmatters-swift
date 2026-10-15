@@ -1,0 +1,5 @@
+generate:
+  - types
+  - client
+# Generated code is only visible inside this package; the TransitMatters target is the public API.
+accessModifier: package
