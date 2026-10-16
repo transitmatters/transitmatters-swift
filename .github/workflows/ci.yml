@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: macOS · swift test
+    runs-on: xcode-27
+    env:
+      # Swift 6.4 ships with Xcode 27; the `xcode-27` runner image is the only one that has it.
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: .build
+          key: spm-macos-${{ hashFiles('Package.resolved') }}
+          restore-keys: spm-macos-
+      - run: swift --version
+      - run: swift build --build-tests
+      - run: swift test --skip-build
+
+  linux:
+    name: Linux · swift test
+    runs-on: ubuntu-latest
+    container: swift:6.4
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: .build
+          key: spm-linux-${{ hashFiles('Package.resolved') }}
+          restore-keys: spm-linux-
+      - run: swift --version
+      - run: swift build --build-tests
+      - run: swift test --skip-build
+
+  platforms:
+    # `swift build` on macOS only checks macOS; build every other platform Package.swift declares.
+    name: ${{ matrix.platform }} · build
+    runs-on: xcode-27
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [iOS, tvOS, watchOS, visionOS]
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v7
+      - name: xcodebuild
+        run: |
+          xcodebuild build \
+            -scheme TransitMatters \
+            -destination "generic/platform=${{ matrix.platform }}" \
+            -skipPackagePluginValidation \
+            -quiet
