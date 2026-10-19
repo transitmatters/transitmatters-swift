@@ -1,4 +1,4 @@
 repo=transitmatters/t-performance-dash
 path=server/openapi.json
-ref=openapi/4-spec-fixes
-sha=59b0a52bb22446cba8549766495322385bd905c3
+ref=main
+sha=bc0edd38bdfe429bb0a7a968a829ffc514208644
