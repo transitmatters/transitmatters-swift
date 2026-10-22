@@ -39,8 +39,10 @@ public struct TransitMattersClient: Sendable {
 
     /// Headways for one service day, in departure order.
     ///
-    /// - Parameter stops: Stop IDs. Rapid transit: 5-digit numeric (`70061`). Bus: `{route}-{direction}-{n}`
-    ///   (`1-0-110`). Commuter rail: `{route}_{direction}_{stop_code}` (`CR-Fairmount_0_DB-2205-01`).
+    /// - Parameters:
+    ///   - date: The service date.
+    ///   - stops: Stop IDs. Rapid transit: 5-digit numeric (`70061`). Bus: `{route}-{direction}-{n}`
+    ///     (`1-0-110`). Commuter rail: `{route}_{direction}_{stop_code}` (`CR-Fairmount_0_DB-2205-01`).
     public func headways(on date: ServiceDate, stops: [String]) async throws -> [HeadwayEvent] {
         let output = try await send {
             try await api.getHeadways(path: .init(user_date: date.description), query: .init(stop: stops))
@@ -54,7 +56,9 @@ public struct TransitMattersClient: Sendable {
 
     /// Dwells for one service day, in time order.
     ///
-    /// - Parameter stops: Stop IDs, in the format ``headways(on:stops:)`` describes.
+    /// - Parameters:
+    ///   - date: The service date.
+    ///   - stops: Stop IDs, in the format ``headways(on:stops:)`` describes.
     public func dwells(on date: ServiceDate, stops: [String]) async throws -> [DwellEvent] {
         let output = try await send {
             try await api.getDwells(path: .init(user_date: date.description), query: .init(stop: stops))
@@ -69,6 +73,7 @@ public struct TransitMattersClient: Sendable {
     /// Travel times between stops for one service day, in departure order.
     ///
     /// - Parameters:
+    ///   - date: The service date.
     ///   - origins: Origin stop IDs, in the format ``headways(on:stops:)`` describes.
     ///   - destinations: Destination stop IDs.
     public func travelTimes(on date: ServiceDate, from origins: [String], to destinations: [String]) async throws -> [TravelTimeEvent] {
@@ -87,7 +92,9 @@ public struct TransitMattersClient: Sendable {
 
     /// Archived alerts that were in effect on a past day.
     ///
-    /// - Parameter routes: Route IDs, as ``routes()`` lists them (`Red`, `66`, `CR-Fairmount`, `Boat-F1`).
+    /// - Parameters:
+    ///   - date: The service date.
+    ///   - routes: Route IDs, as ``routes()`` lists them (`Red`, `66`, `CR-Fairmount`, `Boat-F1`).
     /// - Returns: `nil` when there's no archive for that day: dates before 2017-11-06, or when the
     ///   day's archive can't be read.
     public func alerts(on date: ServiceDate, routes: [String]) async throws -> [HistoricalAlert]? {
@@ -112,7 +119,9 @@ public struct TransitMattersClient: Sendable {
 
     /// Speed restrictions on a rapid transit line on one date.
     ///
-    /// - Parameter line: `line-Red`, `line-Orange`, `line-Blue` or `line-Green`. Case-sensitive.
+    /// - Parameters:
+    ///   - line: `line-Red`, `line-Orange`, `line-Blue` or `line-Green`. Case-sensitive.
+    ///   - date: The service date.
     public func speedRestrictions(line: String, on date: ServiceDate) async throws -> SpeedRestrictions {
         let output = try await send {
             try await api.getSpeedRestrictions(query: .init(line_id: line, date: date.description))
@@ -172,7 +181,9 @@ public struct TransitMattersClient: Sendable {
 
     /// Headway statistics per service date.
     ///
-    /// - Parameter stops: Stop IDs, in the format ``headways(on:stops:)`` describes.
+    /// - Parameters:
+    ///   - stops: Stop IDs, in the format ``headways(on:stops:)`` describes.
+    ///   - dates: The service dates to include.
     public func aggregateHeadways(stops: [String], dates: ClosedRange<ServiceDate>) async throws -> [HeadwayDailyAggregate] {
         let output = try await send {
             try await api.getAggregateHeadways(query: .init(
@@ -190,7 +201,9 @@ public struct TransitMattersClient: Sendable {
 
     /// Dwell statistics per service date.
     ///
-    /// - Parameter stops: Stop IDs, in the format ``headways(on:stops:)`` describes.
+    /// - Parameters:
+    ///   - stops: Stop IDs, in the format ``headways(on:stops:)`` describes.
+    ///   - dates: The service dates to include.
     public func aggregateDwells(stops: [String], dates: ClosedRange<ServiceDate>) async throws -> [DailyAggregate] {
         let output = try await send {
             try await api.getAggregateDwells(query: .init(
@@ -208,8 +221,11 @@ public struct TransitMattersClient: Sendable {
 
     /// Alert-based delays on a line, by cause.
     ///
-    /// - Parameter line: Rapid transit: `Red`, `Orange`, `Blue`, `Green-B` through `Green-E`, `Mattapan`.
-    ///   Commuter rail: `CR-Fairmount`, `CR-Lowell`, etc.
+    /// - Parameters:
+    ///   - line: Rapid transit: `Red`, `Orange`, `Blue`, `Green-B` through `Green-E`, `Mattapan`.
+    ///     Commuter rail: `CR-Fairmount`, `CR-Lowell`, etc.
+    ///   - dates: The service dates to include.
+    ///   - aggregation: How to group the results.
     public func lineDelays(line: String, dates: ClosedRange<ServiceDate>, aggregation: DelayAggregation = .weekly) async throws -> [LineDelays] {
         let output = try await send {
             try await api.getLineDelays(query: .init(
@@ -228,7 +244,10 @@ public struct TransitMattersClient: Sendable {
 
     /// Trip counts, time and distance on a rapid transit line.
     ///
-    /// - Parameter line: `line-red`, `line-orange`, `line-blue`, `line-green` or `line-mattapan`.
+    /// - Parameters:
+    ///   - line: `line-red`, `line-orange`, `line-blue`, `line-green` or `line-mattapan`.
+    ///   - dates: The service dates to include.
+    ///   - aggregation: How to group the results.
     /// - Throws: ``TransitMattersError/dateRangeTooLarge(message:)`` when the range has too many
     ///   entries for `aggregation`.
     public func tripMetrics(line: String, dates: ClosedRange<ServiceDate>, aggregation: Aggregation) async throws -> [TripMetrics] {
@@ -250,7 +269,10 @@ public struct TransitMattersClient: Sendable {
 
     /// Scheduled service on a route.
     ///
-    /// - Parameter route: A route ID, as ``routes()`` lists them.
+    /// - Parameters:
+    ///   - route: A route ID, as ``routes()`` lists them.
+    ///   - dates: The service dates to include.
+    ///   - aggregation: How to group the results.
     public func scheduledService(route: String, dates: ClosedRange<ServiceDate>, aggregation: Aggregation) async throws -> ScheduledService {
         let output = try await send {
             try await api.getScheduledService(query: .init(
@@ -269,8 +291,10 @@ public struct TransitMattersClient: Sendable {
 
     /// Ridership on a line.
     ///
-    /// - Parameter line: Rapid transit: `line-Red`, `line-Orange`, `line-Blue`, `line-Green`.
-    ///   Bus: `line-{route}` (`line-66`). Commuter rail: `line-{line}` (`line-Fairmount`). Ferry: `line-F1`, etc.
+    /// - Parameters:
+    ///   - line: Rapid transit: `line-Red`, `line-Orange`, `line-Blue`, `line-Green`.
+    ///     Bus: `line-{route}` (`line-66`). Commuter rail: `line-{line}` (`line-Fairmount`). Ferry: `line-F1`, etc.
+    ///   - dates: The service dates to include.
     public func ridership(line: String, dates: ClosedRange<ServiceDate>) async throws -> [RidershipCount] {
         let output = try await send {
             try await api.getRidership(query: .init(
@@ -288,7 +312,10 @@ public struct TransitMattersClient: Sendable {
 
     /// Scheduled and delivered service hours on a rapid transit line.
     ///
-    /// - Parameter line: `line-red`, `line-orange`, `line-blue`, `line-green` or `line-mattapan`.
+    /// - Parameters:
+    ///   - line: `line-red`, `line-orange`, `line-blue`, `line-green` or `line-mattapan`.
+    ///   - dates: The service dates to include.
+    ///   - aggregation: How to group the results.
     public func serviceHours(line: String, dates: ClosedRange<ServiceDate>, aggregation: Aggregation) async throws -> [ServiceHours] {
         let output = try await send {
             try await api.getServiceHours(query: .init(

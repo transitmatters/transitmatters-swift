@@ -14,6 +14,8 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-http-types", from: "1.0.0"),
+        // Adds `swift package generate-documentation`; a command plugin, so nothing is linked into the library.
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
     ],
     targets: [
         // Public, hand-written facade over the generated client.

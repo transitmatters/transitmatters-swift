@@ -1,0 +1,64 @@
+<!-- TransitMatters Labs header, matching https://transitmatters.github.io/architecture/. The flask is Resources/favicon.png inlined, since templates don't get the hosting base path. -->
+<style>
+  .tm-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 48px;
+    padding: 0 22px;
+    background: #1773ba;
+    color: #fff;
+    font-family: var(--typography-html-font, Roboto, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1;
+  }
+  .tm-header a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .tm-header__home {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .tm-header__home img {
+    width: 32px;
+    height: 32px;
+  }
+  .tm-header__repo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    font-size: 13px;
+    opacity: 0.9;
+    transition: opacity 0.25s;
+  }
+  .tm-header__repo:hover {
+    opacity: 1;
+  }
+  .tm-header__repo svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+  @media (max-width: 600px) {
+    .tm-header__repo span {
+      display: none;
+    }
+  }
+</style>
+<div class="tm-header">
+  <a class="tm-header__home" href="https://transitmatters.github.io/architecture/">
+    <img src="data:image/png;base64,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" alt="">
+    TransitMatters Labs
+  </a>
+  <a class="tm-header__repo" href="https://github.com/transitmatters/transitmatters-swift" aria-label="transitmatters/transitmatters-swift on GitHub">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+    <span>transitmatters/transitmatters-swift</span>
+  </a>
+</div>

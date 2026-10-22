@@ -1,8 +1,11 @@
 # TransitMatters Swift
 
 [![CI](https://github.com/transitmatters/transitmatters-swift/actions/workflows/ci.yml/badge.svg)](https://github.com/transitmatters/transitmatters-swift/actions/workflows/ci.yml)
+[![Docs](https://github.com/transitmatters/transitmatters-swift/actions/workflows/docs.yml/badge.svg)](https://transitmatters.github.io/transitmatters-swift/)
 
 A Swift client for the [TransitMatters Data Dashboard](https://dashboard.transitmatters.org) API: MBTA headways, travel times, dwells, ridership, speed restrictions, service levels and alerts.
+
+**Read the documentation at https://transitmatters.github.io/transitmatters-swift/**
 
 ```swift
 import TransitMatters
@@ -140,7 +143,7 @@ You can also pass your own `URLSession`, for example to configure caching or tim
 | `routes()` / `stops(route:)` | Route and stop IDs |
 | `healthcheck()` | API health checks |
 
-Line ID formats vary by endpoint (`Red`, `line-Red`, `line-red`); each method's documentation lists the ones it accepts.
+Line ID formats vary by endpoint (`Red`, `line-Red`, `line-red`); each method's [documentation](https://transitmatters.github.io/transitmatters-swift/documentation/transitmatters/transitmattersclient) lists the ones it accepts.
 
 ## Development
 
@@ -150,6 +153,24 @@ swift test
 ```
 
 `swift test` needs full Xcode, not just the Command Line Tools. If it can't find XCTest, run `sudo xcode-select -s /Applications/Xcode.app`.
+
+### Documentation
+
+The docs are built with [DocC](https://www.swift.org/documentation/docc/) from the `///` comments in `Sources/TransitMatters` and the articles in [`Sources/TransitMatters/TransitMatters.docc`](Sources/TransitMatters/TransitMatters.docc). To preview them while you edit:
+
+```sh
+swift package --disable-sandbox preview-documentation --target TransitMatters --experimental-enable-custom-templates
+```
+
+To build the site that gets published:
+
+```sh
+scripts/build-docs.sh    # writes .build/docs-site
+```
+
+Merging to `main` publishes the site to GitHub Pages via [`.github/workflows/docs.yml`](.github/workflows/docs.yml). PRs run the same strict build, so broken symbol links and undocumented parameters fail CI.
+
+The styling matches the [TransitMatters Labs docs](https://transitmatters.github.io/architecture/): colors and fonts are in `theme-settings.json`, and the Labs header and footer are `header.html` and `footer.html` in the catalog. `scripts/build-docs.sh` adds the Roboto font and the flask favicon, so those two don't show up in the preview.
 
 ### Updating the API spec
 
