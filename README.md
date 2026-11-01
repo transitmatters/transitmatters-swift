@@ -3,7 +3,7 @@
 [![CI](https://github.com/transitmatters/transitmatters-swift/actions/workflows/ci.yml/badge.svg)](https://github.com/transitmatters/transitmatters-swift/actions/workflows/ci.yml)
 [![Docs](https://github.com/transitmatters/transitmatters-swift/actions/workflows/docs.yml/badge.svg)](https://transitmatters.github.io/transitmatters-swift/)
 
-A Swift client for the [TransitMatters Data Dashboard](https://dashboard.transitmatters.org) API: MBTA headways, travel times, dwells, ridership, speed restrictions, service levels and alerts.
+A Swift client for the [TransitMatters Data Dashboard](https://dashboard.transitmatters.org) API: MBTA headways, travel times, dwells, ridership, speed restrictions, service levels, bus speeds, Commuter Rail schedules and reliability, alerts and weather.
 
 **Read the documentation at https://transitmatters.github.io/transitmatters-swift/**
 
@@ -135,9 +135,15 @@ You can also pass your own `URLSession`, for example to configure caching or tim
 | `scheduledService(route:dates:aggregation:)` | Scheduled trips |
 | `ridership(line:dates:)` | Ridership counts |
 | `serviceHours(line:dates:aggregation:)` | Scheduled and delivered service hours |
+| `busTripMetrics(route:dates:aggregation:timeBand:dayType:)` | Bus trip counts, speed and fleet makeup |
+| `slowestBusRoutes(dates:limit:)` | Bus routes ranked by average speed |
+| `commuterRailTripMetrics(route:dates:aggregation:)` | Commuter Rail fleet makeup |
+| `commuterRailScorecard(route:dates:aggregation:dayKind:)` | Commuter Rail schedules against Regional Rail standards |
+| `reliability(route:dates:aggregation:)` | On-time performance for The RIDE and commuter rail |
+| `weather(dates:)` | Hourly weather in downtown Boston |
 | **Current and reference** | |
 | `currentAlerts()` | Live alerts from the MBTA |
-| `timePredictions(route:)` | Weekly prediction accuracy |
+| `timePredictions(route:dates:)` | Weekly prediction accuracy |
 | `facilities()` | Elevators, escalators and other facilities |
 | `serviceRidershipDashboard()` | Overview dashboard data |
 | `routes()` / `stops(route:)` | Route and stop IDs |

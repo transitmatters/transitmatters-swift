@@ -155,6 +155,131 @@ let errorBody = #"{"Code": "BadRequestError", "Message": "bad stop"}"#
     #expect(alerts[0].routeIDs.isEmpty)
 }
 
+@Test func busTripMetricsEncodesFiltersAndMapsFleetFields() async throws {
+    let transport = MockTransport(body: """
+        [{"avg_bus_age": 9.7, "count": 215, "date": "2026-09-01", "fleet_mix_battery": 0, "fleet_mix_cng": 18.7,
+          "fleet_mix_hybrid": 81.3, "fleet_trips": 214, "mean_speed_mph": 9.1, "median_speed_mph": 7.17,
+          "miles_covered": 1000, "n_traversals": 4707, "pct_battery_trips": 0, "route": "1", "total_time": 360000}]
+        """)
+    let day = ServiceDate(year: 2026, month: 9, day: 1)
+    let rows = try await makeClient(transport).busTripMetrics(
+        route: "1", dates: day...day, timeBand: .amPeak, dayType: .businessDay
+    )
+
+    let path = try #require(transport.lastRequest?.path)
+    #expect(path.hasPrefix("/api/bustripmetrics?"))
+    #expect(path.contains("agg=daily"))
+    #expect(path.contains("time_band=am_peak"))
+    #expect(path.contains("day_type=business_day"))
+    #expect(rows[0].fleetMix == ["battery": 0, "cng": 18.7, "hybrid": 81.3])
+    #expect(rows[0].percentTripsByType == ["battery": 0])
+    #expect(rows[0].fleetTrips == 214)
+    #expect(rows[0].averageBusAge == 9.7)
+    #expect(rows[0].medianSpeedMph == 7.17)
+    #expect(rows[0].averageSpeedMph == 10)
+}
+
+@Test func slowestBusRoutesEncodesLimit() async throws {
+    let transport = MockTransport(body: """
+        [{"count": 117, "miles_covered": 223.179, "n_traversals": 1149, "route": "55", "total_time": 0}]
+        """)
+    let day = ServiceDate(year: 2026, month: 9, day: 1)
+    let routes = try await makeClient(transport).slowestBusRoutes(dates: day...day, limit: 5)
+
+    #expect(transport.lastRequest?.path?.contains("limit=5") == true)
+    #expect(routes[0].route == "55")
+    #expect(routes[0].averageSpeedMph == nil)
+}
+
+@Test func commuterRailTripMetricsMapsFleetMix() async throws {
+    let transport = MockTransport(body: """
+        [{"avg_cab_car_age": 10.6, "date": "2026-09-01", "fleet_mix_kawasaki": 7.3, "fleet_mix_mbb": 0,
+          "fleet_mix_rotem": 92.7, "fleet_trips": 55, "route": "CR-Fairmount"}]
+        """)
+    let day = ServiceDate(year: 2026, month: 9, day: 1)
+    let rows = try await makeClient(transport).commuterRailTripMetrics(route: "CR-Fairmount", dates: day...day)
+
+    #expect(rows[0].fleetMix == ["kawasaki": 7.3, "mbb": 0, "rotem": 92.7])
+    #expect(rows[0].averageCabCarAge == 10.6)
+    #expect(rows[0].fleetTrips == 55)
+}
+
+@Test func commuterRailScorecardSummaryHasRouteIDs() async throws {
+    let transport = MockTransport(body: """
+        [{"routeId": "CR-Fairmount", "days": 4,
+          "outbound": {"trips": 16.0, "firstTrip": 31620.0, "maxGapMidday": 90.0, "byHour": [0.0, null, 1.0]},
+          "inbound": {"trips": 17.0}, "peakTrips": 8.0, "reversePeakTrips": 6.0}]
+        """)
+    let start = ServiceDate(year: 2026, month: 6, day: 1)
+    let end = ServiceDate(year: 2026, month: 9, day: 30)
+    let rows = try await makeClient(transport).commuterRailScorecard(
+        route: "commuter-rail", dates: start...end, aggregation: .monthly, dayKind: .weekday
+    )
+
+    let path = try #require(transport.lastRequest?.path)
+    #expect(path.contains("route_id=commuter-rail"))
+    #expect(path.contains("day_kind=weekday"))
+    #expect(rows[0].routeID == "CR-Fairmount")
+    #expect(rows[0].date == nil)
+    #expect(rows[0].outbound.firstTripSeconds == 31620)
+    #expect(rows[0].outbound.longestMiddayGapMinutes == 90)
+    #expect(rows[0].outbound.tripsByHour == [0, nil, 1])
+    #expect(rows[0].inbound.lastTripSeconds == nil)
+}
+
+@Test func reliabilityMapsRideAndCommuterRailEntries() async throws {
+    let transport = MockTransport(body: """
+        [{"date": "2026-03-02", "days": 7, "cancelled": 5, "otpDenominator": 3305, "otpNumerator": 2931,
+          "peak": {"cancelled": 2, "otpDenominator": 690, "otpNumerator": 558},
+          "offPeak": {"cancelled": 3, "otpDenominator": 2615, "otpNumerator": 2373}},
+         {"date": "2025-12-01", "days": 31, "completed": 90467, "onTime": 86078, "requests": 140556}]
+        """)
+    let start = ServiceDate(year: 2025, month: 12, day: 1)
+    let end = ServiceDate(year: 2026, month: 3, day: 8)
+    let rows = try await makeClient(transport).reliability(route: "RIDE", dates: start...end, aggregation: .weekly)
+
+    #expect(rows[0].otpNumerator == 2931)
+    #expect(rows[0].peak?.otpDenominator == 690)
+    #expect(rows[0].offPeak?.cancelled == 3)
+    #expect(rows[0].completed == nil)
+    #expect(rows[1].onTime == 86078)
+    #expect(rows[1].missed == nil)
+    #expect(rows[1].peak == nil)
+}
+
+@Test func weatherIsMapped() async throws {
+    let transport = MockTransport(body: """
+        [{"timestamp": "2026-10-07T00:00", "temperature_f": 45.2, "weather_code": 0, "condition": "clear",
+          "precipitation_in": 0.0, "humidity_pct": 58, "wind_mph": null}]
+        """)
+    let day = ServiceDate(year: 2026, month: 10, day: 7)
+    let hours = try await makeClient(transport).weather(dates: day...day)
+
+    #expect(transport.lastRequest?.path == "/api/weather?start_date=2026-10-07&end_date=2026-10-07")
+    #expect(hours[0].temperatureFahrenheit == 45.2)
+    #expect(hours[0].humidityPercent == 58)
+    #expect(hours[0].windSpeedMph == nil)
+}
+
+@Test func timePredictionsDateRangeIsOptional() async throws {
+    let transport = MockTransport(body: "[]")
+    let client = makeClient(transport)
+
+    _ = try await client.timePredictions(route: "Red")
+    #expect(transport.lastRequest?.path == "/api/time_predictions?route_id=Red")
+
+    let start = ServiceDate(year: 2026, month: 1, day: 1)
+    let end = ServiceDate(year: 2026, month: 3, day: 31)
+    _ = try await client.timePredictions(route: "Red", dates: start...end)
+    #expect(transport.lastRequest?.path == "/api/time_predictions?route_id=Red&start_date=2026-01-01&end_date=2026-03-31")
+}
+
+@Test func combinedRouteSlashIsPercentEncoded() async throws {
+    let transport = MockTransport(body: #"{"type": "bus", "direction": {}, "stations": []}"#)
+    _ = try await makeClient(transport).stops(route: "SL4/SL5")
+    #expect(transport.lastRequest?.path == "/api/stops/SL4%2FSL5")
+}
+
 @Test func serviceDateFormatting() {
     #expect(ServiceDate(year: 2024, month: 5, day: 1).description == "2024-05-01")
     #expect(ServiceDate("2024-05-01") == ServiceDate(year: 2024, month: 5, day: 1))

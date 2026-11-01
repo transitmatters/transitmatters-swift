@@ -332,6 +332,155 @@ public struct TransitMattersClient: Sendable {
         }
     }
 
+    /// Trip counts, time, distance and fleet makeup on a bus route.
+    ///
+    /// - Parameters:
+    ///   - route: A bus route ID (`1`, `57`), or a comma-separated group (`114,116,117`) whose routes
+    ///     are summed per period.
+    ///   - dates: The service dates to include.
+    ///   - aggregation: How to group the results.
+    ///   - timeBand: Count only this part of the day. Daily entries then have no median or mean speed.
+    ///     `nil` for the whole day.
+    ///   - dayType: Include only business days, or only weekends and holidays. `nil` for every day.
+    /// - Throws: ``TransitMattersError/dateRangeTooLarge(message:)`` when the range has too many
+    ///   entries for `aggregation`.
+    public func busTripMetrics(
+        route: String,
+        dates: ClosedRange<ServiceDate>,
+        aggregation: Aggregation = .daily,
+        timeBand: BusTripMetrics.TimeBand? = nil,
+        dayType: BusTripMetrics.DayType? = nil
+    ) async throws -> [BusTripMetrics] {
+        let output = try await send {
+            try await api.getBusTripMetrics(query: .init(
+                start_date: dates.lowerBound.description,
+                end_date: dates.upperBound.description,
+                route: route,
+                agg: .init(rawValue: aggregation.rawValue),
+                time_band: timeBand.flatMap { .init(rawValue: $0.rawValue) },
+                day_type: dayType.flatMap { .init(rawValue: $0.rawValue) }
+            ))
+        }
+        switch output {
+        case .ok(let response): return try response.body.json.map(BusTripMetrics.init)
+        case .badRequest(let response): throw TransitMattersError.badRequest(message: try response.body.json.Message)
+        case .forbidden(let response): throw TransitMattersError.dateRangeTooLarge(message: try response.body.json.Message)
+        case .undocumented(let status, _): throw TransitMattersError.unexpectedStatus(status)
+        }
+    }
+
+    /// The bus routes with the lowest average speed, slowest first.
+    ///
+    /// - Parameters:
+    ///   - dates: The service dates to include.
+    ///   - limit: How many routes to return. The API clamps it to 1–200.
+    /// - Throws: ``TransitMattersError/dateRangeTooLarge(message:)`` when the range is too long.
+    public func slowestBusRoutes(dates: ClosedRange<ServiceDate>, limit: Int = 10) async throws -> [BusRouteSpeed] {
+        let output = try await send {
+            try await api.getBusSpeedLeaderboard(query: .init(
+                start_date: dates.lowerBound.description,
+                end_date: dates.upperBound.description,
+                limit: limit
+            ))
+        }
+        switch output {
+        case .ok(let response): return try response.body.json.map(BusRouteSpeed.init)
+        case .badRequest(let response): throw TransitMattersError.badRequest(message: try response.body.json.Message)
+        case .forbidden(let response): throw TransitMattersError.dateRangeTooLarge(message: try response.body.json.Message)
+        case .undocumented(let status, _): throw TransitMattersError.unexpectedStatus(status)
+        }
+    }
+
+    /// Commuter Rail fleet makeup on a route.
+    ///
+    /// - Parameters:
+    ///   - route: A Commuter Rail route ID (`CR-Fairmount`), or `all` for the whole system.
+    ///   - dates: The service dates to include.
+    ///   - aggregation: How to group the results.
+    /// - Throws: ``TransitMattersError/dateRangeTooLarge(message:)`` when the range has too many
+    ///   entries for `aggregation`.
+    public func commuterRailTripMetrics(route: String, dates: ClosedRange<ServiceDate>, aggregation: Aggregation = .daily) async throws -> [CommuterRailTripMetrics] {
+        let output = try await send {
+            try await api.getCommuterRailTripMetrics(query: .init(
+                start_date: dates.lowerBound.description,
+                end_date: dates.upperBound.description,
+                route: route,
+                agg: .init(rawValue: aggregation.rawValue)
+            ))
+        }
+        switch output {
+        case .ok(let response): return try response.body.json.map(CommuterRailTripMetrics.init)
+        case .badRequest(let response): throw TransitMattersError.badRequest(message: try response.body.json.Message)
+        case .forbidden(let response): throw TransitMattersError.dateRangeTooLarge(message: try response.body.json.Message)
+        case .undocumented(let status, _): throw TransitMattersError.unexpectedStatus(status)
+        }
+    }
+
+    /// A Commuter Rail route's schedule, measured against Regional Rail standards.
+    ///
+    /// - Parameters:
+    ///   - route: A Commuter Rail route ID (`CR-Worcester`), or `commuter-rail` for one entry per route
+    ///     covering the whole range.
+    ///   - dates: The service dates to include.
+    ///   - aggregation: How to group the results. Ignored for `commuter-rail`.
+    ///   - dayKind: Which schedule to measure.
+    public func commuterRailScorecard(route: String, dates: ClosedRange<ServiceDate>, aggregation: Aggregation, dayKind: CommuterRailScorecard.DayKind) async throws -> [CommuterRailScorecard] {
+        let output = try await send {
+            try await api.getCommuterRailScorecard(query: .init(
+                route_id: route,
+                start_date: dates.lowerBound.description,
+                end_date: dates.upperBound.description,
+                agg: .init(rawValue: aggregation.rawValue)!,
+                day_kind: .init(rawValue: dayKind.rawValue)!
+            ))
+        }
+        switch output {
+        case .ok(let response): return try response.body.json.map(CommuterRailScorecard.init)
+        case .badRequest(let response): throw TransitMattersError.badRequest(message: try response.body.json.Message)
+        case .undocumented(let status, _): throw TransitMattersError.unexpectedStatus(status)
+        }
+    }
+
+    /// On-time performance counts for The RIDE or commuter rail.
+    ///
+    /// - Parameters:
+    ///   - route: `RIDE` for The RIDE, a commuter rail route ID (`CR-Worcester`), or `commuter-rail` for
+    ///     every commuter rail route combined.
+    ///   - dates: The service dates to include.
+    ///   - aggregation: How to group the results.
+    public func reliability(route: String, dates: ClosedRange<ServiceDate>, aggregation: Aggregation) async throws -> [Reliability] {
+        let output = try await send {
+            try await api.getReliability(query: .init(
+                route_id: route,
+                start_date: dates.lowerBound.description,
+                end_date: dates.upperBound.description,
+                agg: .init(rawValue: aggregation.rawValue)!
+            ))
+        }
+        switch output {
+        case .ok(let response): return try response.body.json.map(Reliability.init)
+        case .badRequest(let response): throw TransitMattersError.badRequest(message: try response.body.json.Message)
+        case .undocumented(let status, _): throw TransitMattersError.unexpectedStatus(status)
+        }
+    }
+
+    /// Hourly weather in downtown Boston, in time order. Days without data are skipped.
+    ///
+    /// - Parameter dates: The dates to include.
+    public func weather(dates: ClosedRange<ServiceDate>) async throws -> [HourlyWeather] {
+        let output = try await send {
+            try await api.getWeather(query: .init(
+                start_date: dates.lowerBound.description,
+                end_date: dates.upperBound.description
+            ))
+        }
+        switch output {
+        case .ok(let response): return try response.body.json.map(HourlyWeather.init)
+        case .badRequest(let response): throw TransitMattersError.badRequest(message: try response.body.json.Message)
+        case .undocumented(let status, _): throw TransitMattersError.unexpectedStatus(status)
+        }
+    }
+
     // MARK: - Current data and reference
 
     /// Current alerts from the MBTA v3 API.
@@ -344,9 +493,18 @@ public struct TransitMattersClient: Sendable {
 
     /// Prediction accuracy for a route, by week.
     ///
-    /// - Parameter route: A route ID, as ``routes()`` lists them.
-    public func timePredictions(route: String) async throws -> [TimePredictionWeek] {
-        switch try await send({ try await api.getTimePredictions(query: .init(route_id: route)) }) {
+    /// - Parameters:
+    ///   - route: A route ID, as ``routes()`` lists them.
+    ///   - dates: Include only weeks that start in this range. `nil` for the full history.
+    public func timePredictions(route: String, dates: ClosedRange<ServiceDate>? = nil) async throws -> [TimePredictionWeek] {
+        let output = try await send {
+            try await api.getTimePredictions(query: .init(
+                route_id: route,
+                start_date: dates?.lowerBound.description,
+                end_date: dates?.upperBound.description
+            ))
+        }
+        switch output {
         case .ok(let response): return try response.body.json.map(TimePredictionWeek.init)
         case .badRequest(let response): throw TransitMattersError.badRequest(message: try response.body.json.Message)
         case .undocumented(let status, _): throw TransitMattersError.unexpectedStatus(status)
@@ -380,7 +538,8 @@ public struct TransitMattersClient: Sendable {
     /// The stations and stop IDs on a route.
     ///
     /// - Parameter route: Rapid transit: `Red`, `Orange`, `Blue`, `Green`, `Mattapan`. Bus: `1`, `66`, etc.
-    ///   Commuter rail: `CR-Fairmount`, etc. Ferry: `Boat-F1`, etc.
+    ///   Commuter rail: `CR-Fairmount`, etc. Ferry: `Boat-F1`, etc. Pass combined bus routes such as
+    ///   `SL4/SL5` as they are; the client percent-encodes the slash.
     public func stops(route: String) async throws -> RouteStops {
         switch try await send({ try await api.getStopsForRoute(path: .init(route_id: route)) }) {
         case .ok(let response): return RouteStops(try response.body.json)
