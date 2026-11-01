@@ -8,7 +8,7 @@ A Swift client for the TransitMatters Data Dashboard API.
 
 ## Overview
 
-TransitMatters is a client for the API behind the [TransitMatters Data Dashboard](https://dashboard.transitmatters.org). Use it to get MBTA headways, travel times, dwells, ridership, speed restrictions, service levels and alerts.
+TransitMatters is a client for the API behind the [TransitMatters Data Dashboard](https://dashboard.transitmatters.org). Use it to get MBTA headways, travel times, dwells, ridership, speed restrictions, service levels, bus speeds, Commuter Rail schedules and reliability, alerts and weather.
 
 ```swift
 import TransitMatters
@@ -57,10 +57,22 @@ Every request is a method on ``TransitMattersClient``. Methods take dates as ``S
 - ``RidershipCount``
 - ``ServiceHours``
 
+### Bus
+
+- ``BusTripMetrics``
+- ``BusRouteSpeed``
+
+### Commuter Rail and The RIDE
+
+- ``CommuterRailTripMetrics``
+- ``CommuterRailScorecard``
+- ``Reliability``
+
 ### Current data and reference
 
 - ``LiveAlert``
 - ``TimePredictionWeek``
+- ``HourlyWeather``
 - ``Facility``
 - ``ServiceRidershipDashboard``
 - ``Routes``

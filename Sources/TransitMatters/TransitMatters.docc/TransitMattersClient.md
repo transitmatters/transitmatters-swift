@@ -26,11 +26,17 @@
 - ``scheduledService(route:dates:aggregation:)``
 - ``ridership(line:dates:)``
 - ``serviceHours(line:dates:aggregation:)``
+- ``busTripMetrics(route:dates:aggregation:timeBand:dayType:)``
+- ``slowestBusRoutes(dates:limit:)``
+- ``commuterRailTripMetrics(route:dates:aggregation:)``
+- ``commuterRailScorecard(route:dates:aggregation:dayKind:)``
+- ``reliability(route:dates:aggregation:)``
+- ``weather(dates:)``
 
 ### Current data and reference
 
 - ``currentAlerts()``
-- ``timePredictions(route:)``
+- ``timePredictions(route:dates:)``
 - ``facilities()``
 - ``serviceRidershipDashboard()``
 - ``routes()``
